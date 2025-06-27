@@ -81,16 +81,11 @@ export default function GeminiChat() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Gemini 2.0 Chat</h1>
-          <p className="text-gray-600">Direct integration with Google's Gemini API</p>
-        </div>
-
-        <Card className="h-[70vh] flex flex-col shadow-lg">
+        <Card className="h-[95vh] flex flex-col shadow-lg">
           <CardHeader className="border-b bg-white/50 flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Bot className="w-5 h-5 text-purple-600" />
-              Gemini 2.0 Flash
+              Emotion AI
             </CardTitle>
             {messages.length > 0 && (
               <Button variant="outline" size="sm" onClick={clearChat}>
@@ -99,7 +94,7 @@ export default function GeminiChat() {
             )}
           </CardHeader>
 
-          <CardContent className="flex-1 p-0">
+          <CardContent className="flex-1 p-0 h-full overflow-hidden">
             <ScrollArea className="h-full p-4">
               {error && (
                 <Alert className="mb-4 border-red-200 bg-red-50">
@@ -112,8 +107,8 @@ export default function GeminiChat() {
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <div className="text-center">
                     <Bot className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-lg font-medium">Welcome to Gemini 2.0!</p>
-                    <p className="text-sm mt-2">Start a conversation to test the API</p>
+                    <p className="text-lg font-medium">Welcome to Emotion AI!</p>
+                    <p className="text-sm mt-2">Start a conversation to test the AI</p>
                     <div className="mt-4 text-xs text-gray-400">
                       <p>Try asking: "Explain how AI works" or "Write a short poem"</p>
                     </div>
@@ -179,7 +174,7 @@ export default function GeminiChat() {
                               style={{ animationDelay: "0.2s" }}
                             ></div>
                           </div>
-                          <span className="text-sm text-gray-600">Gemini is thinking...</span>
+                          <span className="text-sm text-gray-600">typing...</span>
                         </div>
                       </div>
                     </div>
@@ -194,7 +189,7 @@ export default function GeminiChat() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask Gemini anything..."
+                placeholder="Type here"
                 disabled={isLoading}
                 className="flex-1"
               />
@@ -204,10 +199,6 @@ export default function GeminiChat() {
             </form>
           </CardFooter>
         </Card>
-
-        <div className="mt-4 text-center text-sm text-gray-500">
-          <p>Using Google GenAI SDK • Gemini 2.0 Flash Experimental</p>
-        </div>
       </div>
     </div>
   )
