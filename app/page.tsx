@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,10 +23,22 @@ export default function GeminiChat() {
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isSeen, setIsSeen] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  // const [waiting, isWaiting] = useState(true)
+
+  function parseMarkdownJson(markdownJson: string) {
+    // Remove starting and ending triple backtick lines
+    const cleaned = markdownJson
+      .replace(/^```json\s*/i, '')  // remove starting ```json
+      .replace(/```$/, '')          // remove ending ```
+      .trim();
+
+    return JSON.parse(cleaned);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || isLoading) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -34,12 +46,33 @@ export default function GeminiChat() {
       content: input.trim(),
       timestamp: new Date(),
     }
-
+    
     setMessages((prev) => [...prev, userMessage])
-    setInput("")
-    setIsLoading(true)
     setError(null)
+    
+    setInput("");
+    setIsSeen("Sending");
 
+    // Wait for 3 seconds, but abort if user types something
+    let aborted = false;
+    const inputListener = (e: Event) => {
+      aborted = true;
+    };
+
+    // Listen for input changes
+    const inputElement = document.querySelector('input');
+    inputElement?.addEventListener('input', inputListener);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    inputElement?.removeEventListener('input', inputListener);
+
+    if (aborted) {
+      setIsSeen("Sent");
+      return;
+    }
+
+    setIsSeen("Seen");
+
+    setIsLoading(true)
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -51,32 +84,56 @@ export default function GeminiChat() {
         }),
       })
 
-        
-      const data = await response.json()
+      let data = await response.json()
 
       if (!data.success) {
         throw new Error(data.error || "Failed to get response")
       }
 
+      // Parse the JSON string in data.message
+      let parsed = parseMarkdownJson(data.message)
+
+      console.log(parsed)
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.message,
+        content: parsed.ai || "",
         timestamp: new Date(),
       }
 
-      setMessages((prev) => [...prev, assistantMessage])
+      if (assistantMessage.content.length > 0) {
+        setMessages((prev) => [...prev, assistantMessage])
+      }
+
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
+      if (err instanceof Error) {
+        setError(err.message)
+      } else if (typeof err === "string") {
+        setError(err)
+      } else {
+        setError("Something went wrong")
+      }
     } finally {
       setIsLoading(false)
+      setIsSeen("Seen")
     }
+    
   }
 
   const clearChat = () => {
     setMessages([])
     setError(null)
   }
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4">
@@ -130,15 +187,13 @@ export default function GeminiChat() {
                       )}
 
                       <div
-                        className={`max-w-[80%] rounded-lg px-4 py-3 ${
-                          message.role === "user" ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-800 border"
-                        }`}
+                        className={`max-w-[80%] rounded-lg px-4 py-3 ${message.role === "user" ? "bg-purple-600 text-white" : "bg-gray-100 text-gray-800 border"
+                          }`}
                       >
                         <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
                         <p
-                          className={`text-xs mt-2 opacity-70 ${
-                            message.role === "user" ? "text-purple-100" : "text-gray-500"
-                          }`}
+                          className={`text-xs mt-2 opacity-70 ${message.role === "user" ? "text-purple-100" : "text-gray-500"
+                            }`}
                         >
                           {message.timestamp.toLocaleTimeString()}
                         </p>
@@ -153,6 +208,10 @@ export default function GeminiChat() {
                       )}
                     </div>
                   ))}
+                  <div className="relative">
+                    {messages[messages.length - 1].role === 'user' && <p className="text-xs text-muted-foreground text-right pr-12 m-0 absolute -top-4 right-0">{isSeen}</p>}
+                  </div>
+
 
                   {isLoading && (
                     <div className="flex gap-3 justify-start">
@@ -174,13 +233,13 @@ export default function GeminiChat() {
                               style={{ animationDelay: "0.2s" }}
                             ></div>
                           </div>
-                          <span className="text-sm text-gray-600">typing...</span>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </ScrollArea>
           </CardContent>
 
